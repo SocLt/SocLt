@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity — VolunteerHub</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar navbar-expand-lg sticky-top vh-navbar">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <span class="brand-icon">❋</span> VolunteerHub
+      </a>
+      <div class="ms-auto d-flex gap-2">
+        <a class="nav-link" href="index.html"><i class="bi bi-arrow-left me-1"></i>Back to listings</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── LOADING ── -->
+  <div id="loadingState" class="container text-center py-5">
+    <div class="spinner-border vh-spinner" role="status"></div>
+    <p class="mt-3 text-muted">Loading activity…</p>
+  </div>
+
+  <!-- ── NOT FOUND ── -->
+  <div id="notFoundState" class="container text-center py-5 d-none">
+    <div class="empty-icon">😕</div>
+    <h4>Activity not found</h4>
+    <p class="text-muted">It may have been removed or the link is incorrect.</p>
+    <a href="index.html" class="btn vh-btn-primary mt-2">Browse all activities</a>
+  </div>
+
+  <!-- ── DETAIL ── -->
+  <main id="detailContent" class="d-none">
+
+    <!-- Hero image -->
+    <div class="detail-hero" id="detailHero"></div>
+
+    <div class="container py-5">
+      <div class="row g-5">
+
+        <!-- ── Left: main content ── -->
+        <div class="col-lg-8">
+
+          <!-- Org + badge -->
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="vh-card-org mb-0" id="detailOrg"></span>
+            <span class="vh-card-badge position-static" id="detailBadge"></span>
+          </div>
+
+          <h1 class="detail-title" id="detailTitle"></h1>
+          <p class="detail-short-desc" id="detailShortDesc"></p>
+
+          <hr class="my-4" />
+
+          <div class="detail-long-desc" id="detailLongDesc"></div>
+
+        </div>
+
+        <!-- ── Right: info sidebar ── -->
+        <div class="col-lg-4">
+          <div class="detail-sidebar">
+
+            <h2 class="sidebar-heading">Details</h2>
+
+            <ul class="detail-info-list" id="detailInfoList"></ul>
+
+            <hr />
+
+            <h2 class="sidebar-heading">Organisation</h2>
+
+            <div class="detail-org-block" id="detailOrgBlock"></div>
+
+            <a href="submit.html" class="btn vh-btn-primary w-100 mt-4">
+              <i class="bi bi-plus-circle me-2"></i>Submit a new activity
+            </a>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ── FOOTER ── -->
+  <footer class="vh-footer">
+    <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+      <span class="footer-brand"><span class="brand-icon">❋</span> VolunteerHub</span>
+      <span class="text-muted small">A school project · Built with Supabase + HTMX + Alpine.js</span>
+      <a href="submit.html" class="btn vh-btn-primary btn-sm">Submit an activity</a>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/supabase.js"></script>
+  <script>
+    // ── Helpers (duplicated here to keep files self-contained) ──────────────
+    function fmtDate(iso) {
+      if (!iso) return null;
+      const d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function escHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function badgeInfo(dateFrom, dateTo) {
+      if (!dateFrom || !dateTo) return { label: 'Open', cls: 'badge-active' };
+      const today = new Date(); today.setHours(0,0,0,0);
+      const from = new Date(dateFrom + 'T00:00:00');
+      const to   = new Date(dateTo   + 'T00:00:00');
+      if (to < today)   return { label: 'Past',     cls: 'badge-past'     };
+      if (from > today) return { label: 'Upcoming', cls: 'badge-upcoming' };
+      return               { label: 'Active',   cls: 'badge-active'   };
+    }
+
+    // ── Load & render ────────────────────────────────────────────────────────
+    async function loadActivity() {
+      const params = new URLSearchParams(location.search);
+      const id = params.get('id');
+
+      if (!id) { showNotFound(); return; }
+
+      const { data: act, error } = await fetchActivityById(id);
+
+      document.getElementById('loadingState').classList.add('d-none');
+
+      if (error || !act) { showNotFound(); return; }
+
+      // Update page title
+      document.title = `${act.title} — VolunteerHub`;
+
+      // Hero image
+      const hero = document.getElementById('detailHero');
+      if (act.image_url) {
+        hero.style.backgroundImage = `url('${act.image_url}')`;
+        hero.classList.add('has-image');
+      } else {
+        hero.classList.add('no-image');
+      }
+
+      // Badge
+      const { label, cls } = badgeInfo(act.date_from, act.date_to);
+      const badgeEl = document.getElementById('detailBadge');
+      badgeEl.textContent = label;
+      badgeEl.classList.add(cls);
+
+      // Texts
+      document.getElementById('detailOrg').textContent       = act.org_name || '';
+      document.getElementById('detailTitle').textContent     = act.title    || '';
+      document.getElementById('detailShortDesc').textContent = act.short_desc || '';
+
+      // Long description — preserve newlines as paragraphs
+      const longDescEl = document.getElementById('detailLongDesc');
+      if (act.long_desc) {
+        longDescEl.innerHTML = act.long_desc
+          .split(/\n\n+/)
+          .map(p => `<p>${escHtml(p.trim())}</p>`)
+          .join('');
+      }
+
+      // Info list
+      const infoList = document.getElementById('detailInfoList');
+      const infoItems = [];
+
+      if (act.date_from && act.date_to) {
+        infoItems.push({ icon: 'bi-calendar3', label: 'Dates', value: `${fmtDate(act.date_from)} – ${fmtDate(act.date_to)}` });
+      }
+      if (act.min_age != null) {
+        infoItems.push({ icon: 'bi-person', label: 'Minimum age', value: `${act.min_age} years old` });
+      }
+      if (act.address) {
+        infoItems.push({ icon: 'bi-geo-alt', label: 'Address', value: act.address });
+      }
+
+      infoList.innerHTML = infoItems.map(item => `
+        <li class="detail-info-item">
+          <i class="bi ${item.icon} detail-info-icon"></i>
+          <div>
+            <div class="detail-info-label">${item.label}</div>
+            <div class="detail-info-value">${escHtml(item.value)}</div>
+          </div>
+        </li>
+      `).join('');
+
+      // Org block
+      const orgBlock = document.getElementById('detailOrgBlock');
+      const orgLines = [];
+      orgLines.push(`<p class="org-name-large">${escHtml(act.org_name)}</p>`);
+      if (act.org_email)   orgLines.push(`<a href="mailto:${escHtml(act.org_email)}" class="org-contact"><i class="bi bi-envelope"></i> ${escHtml(act.org_email)}</a>`);
+      if (act.org_phone)   orgLines.push(`<a href="tel:${escHtml(act.org_phone)}"    class="org-contact"><i class="bi bi-telephone"></i> ${escHtml(act.org_phone)}</a>`);
+      if (act.org_website) orgLines.push(`<a href="${escHtml(act.org_website)}" target="_blank" rel="noopener" class="org-contact"><i class="bi bi-globe"></i> ${escHtml(act.org_website)}</a>`);
+      orgBlock.innerHTML = orgLines.join('');
+
+      document.getElementById('detailContent').classList.remove('d-none');
+    }
+
+    function showNotFound() {
+      document.getElementById('loadingState').classList.add('d-none');
+      document.getElementById('notFoundState').classList.remove('d-none');
+    }
+
+    document.addEventListener('DOMContentLoaded', loadActivity);
+  </script>
+</body>
+</html>

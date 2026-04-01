@@ -8,7 +8,7 @@
 
 /** Format a YYYY-MM-DD string to a more readable form, e.g. "12 Apr 2025" */
 function fmtDate(iso) {
-  if (!iso) return '?';
+  if (!iso) return '';
   const d = new Date(iso + 'T00:00:00');
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
@@ -21,28 +21,36 @@ function extractCity(address) {
 
 /** Work out whether an activity is active, upcoming or past relative to today. */
 function badgeInfo(dateFrom, dateTo) {
+  if (!dateFrom || !dateTo) return { label: 'Open', cls: 'badge-active' };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const from  = new Date(dateFrom + 'T00:00:00');
-  const to    = new Date(dateTo   + 'T00:00:00');
-
+  const from = new Date(dateFrom + 'T00:00:00');
+  const to   = new Date(dateTo   + 'T00:00:00');
   if (to < today)   return { label: 'Past',     cls: 'badge-past'     };
   if (from > today) return { label: 'Upcoming', cls: 'badge-upcoming' };
-  return              { label: 'Active',   cls: 'badge-active'   };
+  return               { label: 'Active',   cls: 'badge-active'   };
+}
+
+/** Minimal HTML escaping to avoid XSS from DB content. */
+function escHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // ── Render ───────────────────────────────────
 
-const grid     = document.getElementById('activitiesGrid');
-const tmpl     = document.getElementById('activityCardTemplate');
-const loading  = document.getElementById('loadingState');
-const empty    = document.getElementById('emptyState');
-const countEl  = document.getElementById('resultsCount');
+const grid    = document.getElementById('activitiesGrid');
+const tmpl    = document.getElementById('activityCardTemplate');
+const loading = document.getElementById('loadingState');
+const empty   = document.getElementById('emptyState');
+const countEl = document.getElementById('resultsCount');
 
 function renderCards(activities) {
   grid.innerHTML = '';
-
-  // Hide loading, show appropriate state
   loading.classList.add('d-none');
 
   if (!activities || activities.length === 0) {
@@ -57,19 +65,27 @@ function renderCards(activities) {
   activities.forEach(act => {
     const { label, cls } = badgeInfo(act.date_from, act.date_to);
 
-    // Clone template and do simple string replacements
+    // Only render the date row when both dates are present
+    const dateSpan = (act.date_from && act.date_to)
+      ? `<span><i class="bi bi-calendar3"></i> ${fmtDate(act.date_from)} – ${fmtDate(act.date_to)}</span>`
+      : '';
+
+    // Only render the age row when min_age is set
+    const ageSpan = act.min_age != null
+      ? `<span><i class="bi bi-person"></i> Age ${act.min_age}+</span>`
+      : '';
+
     const html = tmpl.innerHTML
-      .replace(/__ID__/g,         act.id)
-      .replace(/__IMAGE__/g,      act.image_url || 'images/placeholder.png')
-      .replace(/__TITLE__/g,      escHtml(act.title))
+      .replace(/__ID__/g,          act.id)
+      .replace(/__IMAGE__/g,       act.image_url || 'images/placeholder.png')
+      .replace(/__TITLE__/g,       escHtml(act.title))
       .replace(/__BADGE_CLASS__/g, cls)
-      .replace(/__BADGE__/g,      label)
-      .replace(/__ORG__/g,        escHtml(act.org_name))
-      .replace(/__SHORT_DESC__/g, escHtml(act.short_desc))
-      .replace(/__DATE_FROM__/g,  fmtDate(act.date_from))
-      .replace(/__DATE_TO__/g,    fmtDate(act.date_to))
-      .replace(/__MIN_AGE__/g,    act.min_age ?? 'Any')
-      .replace(/__CITY__/g,       escHtml(extractCity(act.address)));
+      .replace(/__BADGE__/g,       label)
+      .replace(/__ORG__/g,         escHtml(act.org_name))
+      .replace(/__SHORT_DESC__/g,  escHtml(act.short_desc))
+      .replace(/__DATE_SPAN__/g,   dateSpan)
+      .replace(/__AGE_SPAN__/g,    ageSpan)
+      .replace(/__CITY__/g,        escHtml(extractCity(act.address)));
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = html;
@@ -77,27 +93,16 @@ function renderCards(activities) {
   });
 }
 
-/** Minimal HTML escaping to avoid XSS from DB content. */
-function escHtml(str) {
-  if (!str) return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 // ── Filter & load ────────────────────────────
 
 async function filterActivities() {
-  const search    = document.getElementById('searchInput').value.trim();
-  const city      = document.getElementById('cityFilter').value.trim();
-  const ageRaw    = document.getElementById('ageFilter').value;
-  const dateRaw   = document.getElementById('dateFilter').value;
-  const maxAge    = ageRaw    ? parseInt(ageRaw, 10) : null;
-  const activeOn  = dateRaw  || null;
+  const search   = document.getElementById('searchInput').value.trim();
+  const city     = document.getElementById('cityFilter').value.trim();
+  const ageRaw   = document.getElementById('ageFilter').value;
+  const dateRaw  = document.getElementById('dateFilter').value;
+  const maxAge   = ageRaw  ? parseInt(ageRaw, 10) : null;
+  const activeOn = dateRaw || null;
 
-  // Show spinner while loading
   loading.classList.remove('d-none');
   empty.classList.add('d-none');
   grid.innerHTML = '';
@@ -123,7 +128,6 @@ function resetFilters() {
   filterActivities();
 }
 
-// Expose to global scope so inline Alpine handlers and HTML onclick can call them
 window.filterActivities = filterActivities;
 window.resetFilters     = resetFilters;
 
