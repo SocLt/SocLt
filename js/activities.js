@@ -10,7 +10,7 @@
 function fmtDate(iso) {
   if (!iso) return '';
   const d = new Date(iso + 'T00:00:00');
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('lt-LT', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 /** Extract the city portion from the address field (first comma-separated chunk). */

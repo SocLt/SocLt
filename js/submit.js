@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!file) { clearImage(); return; }
 
     if (file.size > MAX_FILE_BYTES) {
-      showError('Image must be under 5 MB.');
+      showError('Paveikslėlis turi būti mažesnis nei 5 MB.');
       this.value = '';
       return;
     }
@@ -92,19 +92,19 @@ async function handleSubmit() {
   const city       = getVal('f_city');
   const org_name   = getVal('f_org_name');
 
-  if (!title)      { showError('Please enter a title.');                return; }
-  if (!short_desc) { showError('Please enter a short description.');    return; }
+  if (!title)      { showError('Įveskite pavadinimą.');                         return; }
+  if (!short_desc) { showError('Įveskite trumpą aprašymą.');                    return; }
   if (date_from && date_to && date_to < date_from) {
-    showError('End date must be on or after start date.');
+    showError('Pabaigos data turi būti ne ankstesnė už pradžios datą.');
     return;
   }
-  if (!city)     { showError('Please enter a city.');                   return; }
-  if (!org_name) { showError('Please enter an organisation name.');     return; }
+  if (!city)     { showError('Įveskite miestą.');                               return; }
+  if (!org_name) { showError('Įveskite organizacijos pavadinimą.');             return; }
 
   // Image file check
   const imageFile = document.getElementById('f_image_file').files[0];
   if (imageFile && imageFile.size > MAX_FILE_BYTES) {
-    showError('Image must be under 5 MB.');
+    showError('Paveikslėlis turi būti mažesnis nei 5 MB.');
     return;
   }
 
@@ -151,7 +151,7 @@ async function handleSubmit() {
 
   if (error) {
     console.error('Submission error:', error);
-    showError('Something went wrong. Please try again. (' + error.message + ')');
+    showError('Klaida. Bandykite dar kartą. (' + error.message + ')');
     return;
   }
 
