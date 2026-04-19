@@ -21,14 +21,14 @@ function extractCity(address) {
 
 /** Work out whether an activity is active, upcoming or past relative to today. */
 function badgeInfo(dateFrom, dateTo) {
-  if (!dateFrom || !dateTo) return { label: 'Open', cls: 'badge-active' };
+  if (!dateFrom || !dateTo) return { label: 'Vyksta šiuo metu', cls: 'badge-active' };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const from = new Date(dateFrom + 'T00:00:00');
   const to   = new Date(dateTo   + 'T00:00:00');
-  if (to < today)   return { label: 'Past',     cls: 'badge-past'     };
-  if (from > today) return { label: 'Upcoming', cls: 'badge-upcoming' };
-  return               { label: 'Active',   cls: 'badge-active'   };
+  if (to < today)   return { label: 'Praeityje',     cls: 'badge-past'     };
+  if (from > today) return { label: 'Ateityje', cls: 'badge-upcoming' };
+  return               { label: 'Vyksta šiuo metu',   cls: 'badge-active'   };
 }
 
 /** Minimal HTML escaping to avoid XSS from DB content. */
@@ -60,8 +60,8 @@ function renderCards(activities) {
   }
 
   empty.classList.add('d-none');
-  countEl.textContent = `${activities.length} activit${activities.length === 1 ? 'y' : 'ies'} found`;
-
+  //countEl.textContent = `${activities.length} activit${activities.length === 1 ? 'y' : 'ies'} found`;
+  countEl.textContent = `Rasta veiklų: ${activities.length}`;
   activities.forEach(act => {
     const { label, cls } = badgeInfo(act.date_from, act.date_to);
 
@@ -72,7 +72,7 @@ function renderCards(activities) {
 
     // Only render the age row when min_age is set
     const ageSpan = act.min_age != null
-      ? `<span><i class="bi bi-person"></i> Age ${act.min_age}+</span>`
+      ? `<span><i class="bi bi-person"></i> Amžius ${act.min_age}+</span>`
       : '';
 
     const html = tmpl.innerHTML
@@ -113,7 +113,7 @@ async function filterActivities() {
   if (error) {
     console.error('Supabase error:', error);
     loading.classList.add('d-none');
-    countEl.textContent = 'Error loading activities.';
+    countEl.textContent = 'Klaida bandant parodyti veiklas.';
     return;
   }
 

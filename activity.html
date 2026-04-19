@@ -116,13 +116,13 @@
     }
 
     function badgeInfo(dateFrom, dateTo) {
-      if (!dateFrom || !dateTo) return { label: 'Open', cls: 'badge-active' };
+      if (!dateFrom || !dateTo) return { label: 'Vyksta šiuo metu', cls: 'badge-active' };
       const today = new Date(); today.setHours(0,0,0,0);
       const from = new Date(dateFrom + 'T00:00:00');
       const to   = new Date(dateTo   + 'T00:00:00');
-      if (to < today)   return { label: 'Past',     cls: 'badge-past'     };
-      if (from > today) return { label: 'Upcoming', cls: 'badge-upcoming' };
-      return               { label: 'Active',   cls: 'badge-active'   };
+      if (to < today)   return { label: 'Praietyje',     cls: 'badge-past'     };
+      if (from > today) return { label: 'Ateityje', cls: 'badge-upcoming' };
+      return               { label: 'Vyksta šiuo metu',   cls: 'badge-active'   };
     }
 
     // ── Load & render ────────────────────────────────────────────────────────
@@ -175,13 +175,13 @@
       const infoItems = [];
 
       if (act.date_from && act.date_to) {
-        infoItems.push({ icon: 'bi-calendar3', label: 'Dates', value: `${fmtDate(act.date_from)} – ${fmtDate(act.date_to)}` });
+        infoItems.push({ icon: 'bi-calendar3', label: 'Kada vyksta', value: `${fmtDate(act.date_from)} – ${fmtDate(act.date_to)}` });
       }
       if (act.min_age != null) {
-        infoItems.push({ icon: 'bi-person', label: 'Minimum age', value: `${act.min_age} years old` });
+        infoItems.push({ icon: 'bi-person', label: 'Amžius nuo', value: `${act.min_age} metų` });
       }
       if (act.address) {
-        infoItems.push({ icon: 'bi-geo-alt', label: 'Address', value: act.address });
+        infoItems.push({ icon: 'bi-geo-alt', label: 'Adresas', value: act.address });
       }
 
       infoList.innerHTML = infoItems.map(item => `

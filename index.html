@@ -72,7 +72,7 @@
               type="text"
               id="searchInput"
               class="form-control border-start-0"
-              placeholder="Keywords, organisation…"
+              placeholder="Raktiniai žodžiai, organizacijos pavadinimas..."
               hx-trigger="keyup changed delay:400ms"
               hx-get="#"
               x-data
@@ -88,7 +88,7 @@
             type="text"
             id="cityFilter"
             class="form-control"
-            placeholder="Any city"
+            placeholder="Vilnius, Kaunas..."
             x-data
             x-on:input.debounce.400ms="window.filterActivities()"
           />
@@ -101,7 +101,7 @@
             type="number"
             id="ageFilter"
             class="form-control"
-            placeholder="Any"
+            placeholder="Bet koks amžius"
             min="0"
             x-data
             x-on:input.debounce.400ms="window.filterActivities()"
@@ -160,7 +160,7 @@
   <footer class="vh-footer">
     <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
       <span class="footer-brand"><span class="brand-icon">❋</span> SocLt</span>
-      <span class="text-muted small">Mokyklonis projektas · Sukurtas naudojant Supabase + HTMX + Alpine.js</span>
+      <span class="text-muted small">Mokyklinis projektas · Sukurtas naudojant Supabase + HTMX + Alpine.js</span>
       <a href="submit.html" class="btn vh-btn-primary btn-sm">Pasiūlykite veiklą</a>
     </div>
   </footer>
